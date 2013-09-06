@@ -1,0 +1,12 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "go_project": true,
+    "name": "carpetbomb",
+    "main": "main.go"
+  }
+}
