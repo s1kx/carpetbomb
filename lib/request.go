@@ -20,7 +20,7 @@ type Request struct {
 
 func CreateRequest(hostname string, dnsServer string) *Request {
 	ipAddresses := make([]net.IP, 0, 10)
-	return &Request{hostname, dnsServer, nil, ipAddresses[:]}
+	return &Request{hostname, dnsServer, nil, ipAddresses}
 }
 
 func (r *Request) Resolve() {
