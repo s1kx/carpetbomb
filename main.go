@@ -14,15 +14,17 @@ const (
 )
 
 func init() {
-	flag.Usage = func() { fmt.Println("Usage: carpetbomb [-concurrency x] [-wordlist path] <domain>") }
+	flag.Usage = func() { fmt.Println("Usage: carpetbomb [-concurrency x] [-wordlist path] [-output path] <domain>") }
 }
 
 func main() {
 	var concurrency int
 	var wordlistPath string
+	var outputPath string
 
 	flag.IntVar(&concurrency, "concurrency", DefaultConcurrency, "Number of max parallel requests")
 	flag.StringVar(&wordlistPath, "wordlist", "", "Dictionary to use")
+	flag.StringVar(&outputPath, "output", "", "File path to write results to")
 
 	flag.Parse()
 
@@ -34,8 +36,18 @@ func main() {
 
 	domain := args[0]
 
+	// Determine output path
+	if outputPath == "" {
+		// By default, use <domain>-hosts.txt
+		outputPath = fmt.Sprintf("%s-hosts.txt", domain)
+	}
+
+	// Determine wordlist
 	var wordlist []string
-	if wordlistPath != "" {
+	if wordlistPath == "" {
+		// Load default wordlist
+		wordlist = carpetbomb.DefaultWordlist[:]
+	} else {
 		// Load user-specified wordlist
 		list, err := loadWordlist(wordlistPath)
 		if err != nil {
@@ -43,15 +55,17 @@ func main() {
 			os.Exit(1)
 		}
 		wordlist = list
-	} else {
-		// Load default wordlist
-		wordlist = carpetbomb.DefaultWordlist[:]
 	}
 
 	// Pick a random DNS server
 	dnsServer := carpetbomb.GetPublicDnsServer()
 
-	session := carpetbomb.CreateSession(domain, concurrency, dnsServer, wordlist)
+	session, err := carpetbomb.CreateSession(domain, concurrency, dnsServer, wordlist, outputPath)
+	if err != nil {
+		fmt.Printf("Error: %s\n", err)
+		os.Exit(1)
+	}
+
 	session.Start()
 }
 

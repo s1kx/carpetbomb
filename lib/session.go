@@ -2,6 +2,8 @@ package carpetbomb
 
 import (
 	"fmt"
+	// "github.com/cheggaaa/pb"
+	"os"
 	"sync"
 )
 
@@ -12,17 +14,28 @@ type Session struct {
 	DnsServer        string
 	Wordlist         []string
 	IgnoredAddresses []string
+	OutputPath       string
+
+	// File Handles
+	output *os.File
 
 	// Channels
 	newRequests      chan *Request
 	finishedRequests chan *Request
 }
 
-func CreateSession(domain string, concurrency int, dnsServer string, wordlist []string) *Session {
+func CreateSession(domain string, concurrency int, dnsServer string, wordlist []string, outputPath string) (*Session, error) {
 	ignoredAddresses := [...]string{}
+
 	newRequests := make(chan *Request)
 	finishedRequests := make(chan *Request)
-	return &Session{domain, concurrency, dnsServer, wordlist, ignoredAddresses[:], newRequests, finishedRequests}
+
+	output, err := os.Create(outputPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Session{domain, concurrency, dnsServer, wordlist, ignoredAddresses[:], outputPath, output, newRequests, finishedRequests}, nil
 }
 
 func (s *Session) Start() {
@@ -48,7 +61,10 @@ func (s *Session) Start() {
 			if request.Error == nil {
 				// Print DNS results (if any)
 				for _, address := range request.IPAddresses {
-					fmt.Printf("%s\t%s\n", request.Hostname, address)
+					line := fmt.Sprintf("%s\t%s\n", request.Hostname, address)
+
+					// Write to file
+					s.output.Write([]byte(line))
 				}
 			}
 		}
