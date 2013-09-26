@@ -6,6 +6,7 @@ import (
 	"fmt"
 	carpetbomb "github.com/s1kx/carpetbomb/lib"
 	"os"
+	"strings"
 )
 
 const (
@@ -14,17 +15,24 @@ const (
 )
 
 func init() {
-	flag.Usage = func() { fmt.Println("Usage: carpetbomb [-concurrency x] [-wordlist path] [-output path] <domain>") }
+	flag.Usage = func() {
+		fmt.Println("Usage: carpetbomb [options] <domain>")
+		flag.PrintDefaults()
+	}
 }
 
 func main() {
 	var concurrency int
 	var wordlistPath string
 	var outputPath string
+	var ignoreAddressesFlag string
+
+	ignoreAddresses := make([]string, 0, 10)
 
 	flag.IntVar(&concurrency, "concurrency", DefaultConcurrency, "Number of max parallel requests")
-	flag.StringVar(&wordlistPath, "wordlist", "", "Dictionary to use")
+	flag.StringVar(&wordlistPath, "wordlist", "", "File path of dictionary to use as subdomains")
 	flag.StringVar(&outputPath, "output", "", "File path to write results to")
+	flag.StringVar(&ignoreAddressesFlag, "ignore", "", "Comma-separated list of IP address masks to ignore (e.g. 192.168.*,213.254.18.59,127.0.0.*)")
 
 	flag.Parse()
 
@@ -57,10 +65,16 @@ func main() {
 		wordlist = list
 	}
 
+	// Determine ignored IP addresses
+	if ignoreAddressesFlag != "" {
+		parts := strings.Split(ignoreAddressesFlag, ",")
+		ignoreAddresses = append(ignoreAddresses, parts...)
+	}
+
 	// Pick a random DNS server
 	dnsServer := carpetbomb.GetPublicDnsServer()
 
-	session, err := carpetbomb.CreateSession(domain, concurrency, dnsServer, wordlist, outputPath)
+	session, err := carpetbomb.CreateSession(domain, concurrency, dnsServer, wordlist, ignoreAddresses, outputPath)
 	if err != nil {
 		fmt.Printf("Error: %s\n", err)
 		os.Exit(1)

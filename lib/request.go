@@ -1,10 +1,12 @@
 package carpetbomb
 
 import (
-	"errors"
-	"fmt"
 	"github.com/miekg/dns"
 	"net"
+)
+
+const (
+	DnsTimeout = 5e9
 )
 
 type Request struct {
@@ -23,31 +25,24 @@ func CreateRequest(hostname string, dnsServer string) *Request {
 
 func (r *Request) Resolve() {
 	// Create DNS client
-	dnsClient := new(dns.Client)
+	c := new(dns.Client)
+	c.ReadTimeout = DnsTimeout
 
 	// Create DNS message
-	msg := new(dns.Msg)
-	msg.SetQuestion(dns.Fqdn(r.Hostname), dns.TypeA)
+	m := new(dns.Msg)
+	m.SetQuestion(dns.Fqdn(r.Hostname), dns.TypeA)
 
 	// Send DNS request
-	response, _, err := dnsClient.Exchange(msg, r.DnsServer)
+	resp, _, err := c.Exchange(m, r.DnsServer)
 
 	if err != nil {
 		r.Error = err
 		return
 	}
 
-	if len(response.Answer) == 0 {
-		r.Error = errors.New(fmt.Sprintf("Invalid hostname: %s", r.Hostname))
-		return
-	}
-
-	for _, answer := range response.Answer {
+	for _, answer := range resp.Answer {
 		if dnsRecord, ok := answer.(*dns.A); ok {
-			// Get Record
-			ipAddress := dnsRecord.A
-
-			r.IPAddresses = append(r.IPAddresses, ipAddress)
+			r.IPAddresses = append(r.IPAddresses, dnsRecord.A)
 		}
 	}
 }
