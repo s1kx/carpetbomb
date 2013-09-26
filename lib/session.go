@@ -2,7 +2,7 @@ package carpetbomb
 
 import (
 	"fmt"
-	// "github.com/cheggaaa/pb"
+	"github.com/cheggaaa/pb"
 	"os"
 	"sync"
 )
@@ -39,7 +39,10 @@ func CreateSession(domain string, concurrency int, dnsServer string, wordlist []
 }
 
 func (s *Session) Start() {
-	// Wait for all goroutines to finish
+	// Progress bar
+	bar := pb.StartNew(len(s.Wordlist))
+
+	// Waitgroup for worker goroutines
 	wg := sync.WaitGroup{}
 
 	// Start x workers
@@ -58,6 +61,7 @@ func (s *Session) Start() {
 	go func() {
 		// Process all finished requests
 		for request := range s.finishedRequests {
+			bar.Increment()
 			if request.Error == nil {
 				// Print DNS results (if any)
 				for _, address := range request.IPAddresses {
@@ -91,6 +95,8 @@ func (s *Session) Start() {
 
 	// Wait for results-printing goroutine to finish
 	<-resultsFinished
+
+	bar.FinishPrint("Done!")
 }
 
 func (s *Session) WorkerLoop() {
