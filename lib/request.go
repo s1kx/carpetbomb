@@ -1,12 +1,12 @@
 package carpetbomb
 
 import (
-	"github.com/miekg/dns"
+	// "github.com/miekg/dns"
 	"net"
 )
 
 const (
-	DnsTimeout = 5e9
+	DnsTimeout = 3e9
 )
 
 type Request struct {
@@ -24,25 +24,27 @@ func CreateRequest(hostname string, dnsServer string) *Request {
 }
 
 func (r *Request) Resolve() {
-	// Create DNS client
-	c := new(dns.Client)
-	c.ReadTimeout = DnsTimeout
+	// // Create DNS client
+	// c := new(dns.Client)
+	// c.ReadTimeout = DnsTimeout
 
-	// Create DNS message
-	m := new(dns.Msg)
-	m.SetQuestion(dns.Fqdn(r.Hostname), dns.TypeA)
+	// // Create DNS message
+	// m := new(dns.Msg)
+	// m.SetQuestion(dns.Fqdn(r.Hostname), dns.TypeA)
+	// m.Id = dns.Id()
 
-	// Send DNS request
-	resp, _, err := c.Exchange(m, r.DnsServer)
+	// // Send DNS request
+	// resp, _, err := c.Exchange(m, r.DnsServer)
+	// if err != nil {
+	// 	r.Error = err
+	// 	return
+	// }
 
-	if err != nil {
-		r.Error = err
-		return
-	}
+	// for _, answer := range resp.Answer {
+	// 	if dnsRecord, ok := answer.(*dns.A); ok {
+	// 		r.IPAddresses = append(r.IPAddresses, dnsRecord.A)
+	// 	}
+	// }
 
-	for _, answer := range resp.Answer {
-		if dnsRecord, ok := answer.(*dns.A); ok {
-			r.IPAddresses = append(r.IPAddresses, dnsRecord.A)
-		}
-	}
+	r.IPAddresses, r.Error = net.LookupIP(r.Hostname)
 }

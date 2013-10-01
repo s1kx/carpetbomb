@@ -5,8 +5,10 @@ import (
 	"flag"
 	"fmt"
 	carpetbomb "github.com/s1kx/carpetbomb/lib"
+	"math/rand"
 	"os"
 	"strings"
+	"time"
 )
 
 const (
@@ -19,6 +21,9 @@ func init() {
 		fmt.Println("Usage: carpetbomb [options] <domain>")
 		flag.PrintDefaults()
 	}
+
+	// Set random seed
+	rand.Seed(time.Now().UTC().UnixNano())
 }
 
 func main() {
@@ -71,10 +76,7 @@ func main() {
 		ignoreAddresses = append(ignoreAddresses, parts...)
 	}
 
-	// Pick a random DNS server
-	dnsServer := carpetbomb.GetPublicDnsServer()
-
-	session, err := carpetbomb.CreateSession(domain, concurrency, dnsServer, wordlist, ignoreAddresses, outputPath)
+	session, err := carpetbomb.CreateSession(domain, concurrency, wordlist, ignoreAddresses, outputPath)
 	if err != nil {
 		fmt.Printf("Error: %s\n", err)
 		os.Exit(1)

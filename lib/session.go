@@ -14,7 +14,6 @@ type Session struct {
 	// Properties
 	Domain                string
 	Concurrency           int
-	DnsServer             string
 	Wordlist              []string
 	IgnoredAddresses      []string
 	IgnoredAddressesRegex []*regexp.Regexp
@@ -28,7 +27,7 @@ type Session struct {
 	finishedRequests chan *Request
 }
 
-func CreateSession(domain string, concurrency int, dnsServer string, wordlist []string, ignoreAddresses []string, outputPath string) (*Session, error) {
+func CreateSession(domain string, concurrency int, wordlist []string, ignoreAddresses []string, outputPath string) (*Session, error) {
 	newRequests := make(chan *Request)
 	finishedRequests := make(chan *Request)
 
@@ -49,7 +48,7 @@ func CreateSession(domain string, concurrency int, dnsServer string, wordlist []
 	}
 
 	return &Session{
-		domain, concurrency, dnsServer, wordlist, ignoreAddresses, ignoredAddressesRegex, outputPath,
+		domain, concurrency, wordlist, ignoreAddresses, ignoredAddressesRegex, outputPath,
 		output,
 		newRequests, finishedRequests,
 	}, nil
@@ -92,9 +91,11 @@ func (s *Session) Start() {
 		// Process all finished requests
 		for request := range s.finishedRequests {
 			bar.Increment()
-			if request.Error != nil {
-				fmt.Printf("%s\n", request.Error)
-			}
+
+			// if request.Error != nil {
+			// 	fmt.Printf("%s\n", request.Error)
+			// }
+
 			if request.Error == nil {
 				// Print DNS results (if any)
 				for _, address := range request.IPAddresses {
@@ -118,7 +119,9 @@ func (s *Session) Start() {
 		// Concat subdomain + domain
 		hostname := fmt.Sprintf("%s.%s", subdomain, s.Domain)
 
-		request := CreateRequest(hostname, s.DnsServer)
+		dns := GetRandomPublicDnsServer()
+
+		request := CreateRequest(hostname, dns)
 
 		s.newRequests <- request
 	}
@@ -138,9 +141,7 @@ func (s *Session) Start() {
 func (s *Session) WorkerLoop() {
 	// Get requests
 	for request := range s.newRequests {
-		// fmt.Println(request.Hostname)
 		request.Resolve()
-		// fmt.Printf("%s: %s\n", request.Hostname, request.Error)
 
 		s.finishedRequests <- request
 	}
